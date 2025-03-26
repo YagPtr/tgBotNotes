@@ -48,6 +48,117 @@ public class BotMenu {
        return sm;
    }
 
+
+    public static List<SendMessage> throwTasksDeleted(long id,String author){
+        List<SendMessage> notesEx= new ArrayList<>();
+
+//       List<InlineKeyboardButton> notesCommands= new ArrayList<>();
+
+        System.out.println("author is "+author+"id is "+id);
+
+        try {
+            System.out.println(author);
+            // 1. URL для запроса (пример с тестовым API)
+            String forURL="http://127.0.0.1:8000/notes/completed/"+String.valueOf(author);
+            System.out.println(forURL);
+            URL url = new URL(forURL);
+
+            // 2. Открываем соединение
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "application/json");
+
+            // 3. Получаем код ответа
+            int responseCode = connection.getResponseCode();
+            System.out.println("Response Code: " + responseCode);
+
+            // 4. Читаем ответ
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream())
+                )) {
+                    String line;
+                    StringBuilder response = new StringBuilder();
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    System.out.println("JSON Response: " + response.toString());
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode rootArray = mapper.readTree(response.toString());
+
+                    // 2. Создаем список для результата
+                    List<Map<String, String>> result = new ArrayList<>();
+
+                    // 3. Обрабатываем каждый элемент массива
+                    for (JsonNode node : rootArray) {
+                        Map<String, String> item = new HashMap<>();
+                        item.put("name", node.get("name").asText());
+                        item.put("id", node.get("id").asText());
+                        item.put("data", node.get("data").asText());
+                        result.add(item);
+                    }
+                    System.out.println(result);
+                    for (Map<String, String> item : result) {
+                        List<InlineKeyboardButton> notesCommands= new ArrayList<>();
+                        Map<String, String> dataForMessage = new HashMap<>();
+                        dataForMessage.put("id", item.get("id"));
+
+                        Gson gson = new Gson();
+//                        Map<String, String> data = new HashMap<>();
+//                        data.put("action", "taskCompleted");
+
+                        dataForMessage.put("a", "com");
+                        String jsonData = gson.toJson(dataForMessage);
+
+                        notesCommands.add(InlineKeyboardButton.builder()
+                                .text("Выполнил").callbackData(jsonData)
+                                .build());
+                        dataForMessage.put("a", "del");
+                        jsonData = gson.toJson(dataForMessage);
+                        notesCommands.add(InlineKeyboardButton.builder()
+                                .text("Удалить").callbackData(jsonData)
+                                .build());
+                        dataForMessage.put("a", "dod");
+                        jsonData = gson.toJson(dataForMessage);
+                        notesCommands.add(      InlineKeyboardButton.builder()
+                                .text("Пропущена").callbackData(jsonData)
+                                .build());
+
+                        InlineKeyboardMarkup notesManage = InlineKeyboardMarkup.builder()
+                                .keyboardRow(notesCommands).build();
+
+                        notesEx.add(SendMessage.builder().chatId(String.valueOf(id))
+                                .parseMode("HTML").text("Задача : "+item.get("name")+"&#10;&#13;"+item.get("data")).replyMarkup(notesManage)
+                                .build());
+
+//                        System.out.println(SendMessage.builder().chatId(String.valueOf(id))
+//                                .parseMode("HTML").text("item.get()").replyMarkup(notesManage)
+//                                .build());
+
+                    }
+                }
+            } else {
+                System.out.println("Error: " + responseCode);
+            }
+
+            // 5. Закрываем соединение
+            connection.disconnect();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        // Преобразуем Map в JSON
+
+
+
+
+
+
+        return notesEx;
+    }
+
+
+
    public static List<SendMessage> throwTasks(long id,String author){
        List<SendMessage> notesEx= new ArrayList<>();
 
@@ -58,7 +169,7 @@ public class BotMenu {
        try {
            System.out.println(author);
            // 1. URL для запроса (пример с тестовым API)
-           String forURL="http://127.0.0.1:8000/notes/"+author;
+           String forURL="http://127.0.0.1:8000/notes/"+String.valueOf(author);
            System.out.println(forURL);
            URL url = new URL(forURL);
 

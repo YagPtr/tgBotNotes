@@ -149,6 +149,11 @@ public class Bot extends TelegramLongPollingBot {
                         sendText(Long.valueOf(author), "что-то пошло не так");
 
                     }
+                    try {
+                        execute(BotMenu.getMenu(Long.valueOf(author),"Меню"));
+                    } catch (TelegramApiException e) {
+                        throw new RuntimeException(e);
+                    }
                     // Читаем ответ (если нужно)
 //                    if (responseCode == HttpURLConnection.HTTP_OK) {
 //                        try (BufferedReader reader = new BufferedReader(
@@ -198,7 +203,32 @@ public class Bot extends TelegramLongPollingBot {
         execute(close);
 //        execute(newTxt);
 //        execute(newKb);
-        }else {
+        }
+        else if(data.equals("ClosedTasks")) {
+
+            List<SendMessage> messages = BotMenu.throwTasksDeleted(id,author);
+            if (messages.size()>0){
+                for (SendMessage sendMessage : messages) {
+                    execute(sendMessage);
+                }
+            }else {
+                sendText(Long.valueOf(author), "Закрытых задач нет");
+            }
+//            newKb.setReplyMarkup(keyboardM1);
+//        } else  {
+////            newTxt.setText("не кнопка меню");
+////            newKb.setReplyMarkup(keyboardM1);
+//        }
+
+
+            AnswerCallbackQuery close = AnswerCallbackQuery.builder()
+                    .callbackQueryId(queryId).build();
+
+            execute(close);
+//        execute(newTxt);
+//        execute(newKb);
+        }
+        else {
              // "buy"
 //            System.out.println(command);
 //            sendText(919660791L, command);
@@ -248,6 +278,62 @@ public class Bot extends TelegramLongPollingBot {
         } else  if(msg.isCommand()) {
             System.out.println("msg is "+msg);
             if(msg.getText().equals("/start")) {
+                try{
+                    System.out.println(update);
+                    URL url = null;
+                    try {
+                        url = new URL("http://127.0.0.1:8000/notes/register/");
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
+                    HttpURLConnection connection = null;
+                    try {
+                        connection = (HttpURLConnection) url.openConnection();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    try {
+                        connection.setRequestMethod("POST");
+                    } catch (ProtocolException e) {
+                        throw new RuntimeException(e);
+                    }
+                    connection.setRequestProperty("Content-Type", "application/json");
+                    connection.setRequestProperty("Accept", "application/json");
+                    connection.setDoOutput(true); // Разрешаем запись тела
+
+                    // 3. JSON-тело запрос
+
+                    String note=update.getMessage().getText();
+                    String author=Long.toString(update.getMessage().getFrom().getId());
+                    String author_name=update.getMessage().getFrom().getUserName();
+
+                    String jsonInputString = "{\"user_id\": \""+ author +"\", \"first_name\": \"" + author_name + "\" , \"last_name\" : \" whatever \"}";
+                    System.out.println(jsonInputString);
+                    // 4. Отправляем тело запроса
+                    try (OutputStream os = connection.getOutputStream()) {
+                        byte[] input = jsonInputString.getBytes("utf-8");
+                        os.write(input, 0, input.length);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    int responseCode = 0;
+                    try {
+                        responseCode = connection.getResponseCode();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    if (responseCode == 200) {
+                        sendText(Long.valueOf(author), "Добро пожаловать");
+                    }
+                    else{
+                        sendText(Long.valueOf(author), "что-то пошло не так");
+                    }
+
+                    connection.disconnect();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
                 try {
                     execute(BotMenu.getMenu(msg.getFrom().getId(),"Меню"));
                 } catch (TelegramApiException e) {
@@ -285,7 +371,7 @@ public class Bot extends TelegramLongPollingBot {
 
             String note=update.getMessage().getText();
             String author=Long.toString(update.getMessage().getFrom().getId());
-            String jsonInputString = "{\"Note\": \""+ note +"\", \"author\": \"" + author + "\"}";
+            String jsonInputString = "{\"Note\": \""+ note +"\", \"user_id\": \"" + author + "\"}";
             System.out.println(jsonInputString);
             // 4. Отправляем тело запроса
             try (OutputStream os = connection.getOutputStream()) {
@@ -308,6 +394,11 @@ public class Bot extends TelegramLongPollingBot {
             }
 
             connection.disconnect();
+            try {
+                execute(BotMenu.getMenu(msg.getFrom().getId(),"Меню"));
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
         }
 
 //        var query=update.getCallbackQuery();
