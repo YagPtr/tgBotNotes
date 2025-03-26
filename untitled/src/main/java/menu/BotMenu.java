@@ -59,7 +59,7 @@ public class BotMenu {
         try {
             System.out.println(author);
             // 1. URL для запроса (пример с тестовым API)
-            String forURL="http://127.0.0.1:8000/notes/completed/"+String.valueOf(author);
+            String forURL="http://127.0.0.1:8000/notes/completed/"+author;
             System.out.println(forURL);
             URL url = new URL(forURL);
 
